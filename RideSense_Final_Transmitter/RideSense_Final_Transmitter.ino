@@ -103,7 +103,8 @@ void loop()
     ',',
     alcoholDetected ? '1' : '0',
     ',',
-    sleepDetected ? '1' : '0'
+    sleepDetected ? '1' : '0',
+    '\\0'
   };
 
   // LED indicates the transmitter is operating and sending packets.
@@ -115,7 +116,7 @@ void loop()
 
     rf_driver.send(
       reinterpret_cast<const uint8_t *>(packet),
-      sizeof(packet)
+      sizeof(packet) - 1
     );
     rf_driver.waitPacketSent();
 
