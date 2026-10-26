@@ -1,8 +1,13 @@
 #include <ESP8266WiFi.h>
+#include <SoftwareSerial.h>
 
 // Replace these with your phone's hotspot details
 const char* WIFI_SSID = "Samsung F15";
 const char* WIFI_PASSWORD = "aaliya2303";
+
+// Receive UNO telemetry on GPIO14 (D5 on NodeMCU-style boards).
+// GPIO12 (D6) is the unused SoftwareSerial TX pin.
+SoftwareSerial arduinoSerial(14, 12);
 
 char telemetryLine[80];
 size_t telemetryIndex = 0;
@@ -34,8 +39,8 @@ void printStatusLine(const char* line) {
 }
 
 void readArduinoTelemetry() {
-  while (Serial.available() > 0) {
-    char ch = (char)Serial.read();
+  while (arduinoSerial.available() > 0) {
+    char ch = (char)arduinoSerial.read();
 
     if (ch == '\r') {
       continue;
@@ -57,9 +62,9 @@ void readArduinoTelemetry() {
 }
 
 void setup() {
-  // The UNO sends telemetry at 9600 baud to the ESP RX pin.
-  // ESP USB Serial Monitor must also be set to 9600 baud.
-  Serial.begin(9600);
+  // Keep USB Serial dedicated to diagnostics; receive UNO data on GPIO14.
+  Serial.begin(115200);
+  arduinoSerial.begin(9600);
   delay(1000);
 
   Serial.println();
