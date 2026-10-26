@@ -123,6 +123,10 @@ SoftwareSerial gsmSerial(
   GSM_TX_PIN
 );
 
+// One-way telemetry to ESP-12E: Arduino D3 (TX) -> level shifter -> ESP RX.
+// Transmit only; do not call listen() on this instance because GPS must receive.
+SoftwareSerial espSerial(2, 3);
+
 // ============================================================
 // MPU-6050
 // ============================================================
@@ -976,6 +980,15 @@ void receiveRF()
   lastRFTime =
     millis();
 
+  // Forward valid RF packet to ESP-12E as CSV:
+  // RF,helmetStatus,alcoholLevel,sleepStatus
+  espSerial.print(F("RF,"));
+  espSerial.print(helmetStatus);
+  espSerial.print(',');
+  espSerial.print(alcoholLevel);
+  espSerial.print(',');
+  espSerial.println(sleepStatus);
+
   // ----------------------------------------------------------
   // Serial output
   // ----------------------------------------------------------
@@ -1361,6 +1374,14 @@ void setup()
   );
 
   delay(100);
+
+  // ----------------------------------------------------------
+  // ESP-12E telemetry (transmit only)
+  // ----------------------------------------------------------
+
+  espSerial.begin(9600);
+
+  // Keep GPS SoftwareSerial as the active receiver.
 
   // ----------------------------------------------------------
   // GPS
