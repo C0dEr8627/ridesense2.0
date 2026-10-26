@@ -4,17 +4,71 @@
 const char* WIFI_SSID = "Samsung F15";
 const char* WIFI_PASSWORD = "aaliya2303";
 
+char telemetryLine[80];
+size_t telemetryIndex = 0;
+
+void printStatusLine(const char* line) {
+  int helmet = 0;
+  int alcohol = 0;
+  int sleep = 0;
+  int accident = 0;
+
+  // Expected format: STATUS,helmet,alcohol,sleep,accident
+  if (sscanf(line, "STATUS,%d,%d,%d,%d",
+             &helmet, &alcohol, &sleep, &accident) == 4) {
+    Serial.println();
+    Serial.println(F("====== RIDESENSE TELEMETRY ======"));
+    Serial.print(F("Helmet  : "));
+    Serial.println(helmet ? F("YES") : F("NO"));
+    Serial.print(F("Alcohol : "));
+    Serial.println(alcohol ? F("YES") : F("NO"));
+    Serial.print(F("Sleep   : "));
+    Serial.println(sleep ? F("YES") : F("NO"));
+    Serial.print(F("Accident: "));
+    Serial.println(accident ? F("YES") : F("NO"));
+    Serial.println(F("================================="));
+  } else {
+    Serial.print(F("Received (unparsed): "));
+    Serial.println(line);
+  }
+}
+
+void readArduinoTelemetry() {
+  while (Serial.available() > 0) {
+    char ch = (char)Serial.read();
+
+    if (ch == '\r') {
+      continue;
+    }
+
+    if (ch == '\n') {
+      telemetryLine[telemetryIndex] = '\0';
+      if (telemetryIndex > 0) {
+        printStatusLine(telemetryLine);
+      }
+      telemetryIndex = 0;
+    } else if (telemetryIndex < sizeof(telemetryLine) - 1) {
+      telemetryLine[telemetryIndex++] = ch;
+    } else {
+      // Drop an oversized line and wait for the next newline.
+      telemetryIndex = 0;
+    }
+  }
+}
+
 void setup() {
-  Serial.begin(115200);
+  // The UNO sends telemetry at 9600 baud to the ESP RX pin.
+  // ESP USB Serial Monitor must also be set to 9600 baud.
+  Serial.begin(9600);
   delay(1000);
 
   Serial.println();
-  Serial.println("RideSense 2.0 ESP-12E starting...");
+  Serial.println(F("RideSense 2.0 ESP-12E starting..."));
 
   WiFi.mode(WIFI_STA);
   WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
 
-  Serial.print("Connecting to hotspot");
+  Serial.print(F("Connecting to hotspot"));
 
   unsigned long startTime = millis();
 
@@ -27,27 +81,30 @@ void setup() {
   Serial.println();
 
   if (WiFi.status() == WL_CONNECTED) {
-    Serial.println("WIFI_CONNECTED");
-    Serial.print("IP address: ");
+    Serial.println(F("WIFI_CONNECTED"));
+    Serial.print(F("IP address: "));
     Serial.println(WiFi.localIP());
-    Serial.print("Signal strength: ");
+    Serial.print(F("Signal strength: "));
     Serial.print(WiFi.RSSI());
-    Serial.println(" dBm");
+    Serial.println(F(" dBm"));
   } else {
-    Serial.println("WIFI_FAILED");
-    Serial.println("Check hotspot name and password.");
+    Serial.println(F("WIFI_FAILED"));
+    Serial.println(F("Check hotspot name and password."));
   }
 
-  Serial.println("ESP test complete.");
+  Serial.println(F("Waiting for Arduino telemetry..."));
 }
 
 void loop() {
-  // Check Wi-Fi connection periodically
+  // Read telemetry regardless of Wi-Fi state; AWS is not required for Phase 1.
+  readArduinoTelemetry();
+
   if (WiFi.status() != WL_CONNECTED) {
-    Serial.println("Wi-Fi disconnected. Reconnecting...");
-    WiFi.reconnect();
-    delay(5000);
-  } else {
-    delay(1000);
+    static unsigned long lastReconnectAttempt = 0;
+    if (millis() - lastReconnectAttempt >= 5000) {
+      lastReconnectAttempt = millis();
+      Serial.println(F("Wi-Fi disconnected. Reconnecting..."));
+      WiFi.reconnect();
+    }
   }
 }
