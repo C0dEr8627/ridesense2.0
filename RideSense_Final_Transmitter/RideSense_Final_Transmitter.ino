@@ -104,7 +104,7 @@ void loop()
     alcoholDetected ? '1' : '0',
     ',',
     sleepDetected ? '1' : '0',
-    '\\0'
+    '\0'
   };
 
   // LED indicates the transmitter is operating and sending packets.
