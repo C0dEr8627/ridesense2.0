@@ -1044,10 +1044,13 @@ void receiveRF()
   // Engine permission
   // ----------------------------------------------------------
 
+  // Engine is allowed only when the rider wears a helmet,
+  // alcohol is not detected, and sleepiness is not detected.
   bool allowEngine =
     (
       helmetStatus == 1 &&
-      alcoholLevel == 0
+      alcoholLevel == 0 &&
+      sleepStatus == 0
     );
 
   setRelay(
