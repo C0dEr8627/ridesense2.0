@@ -344,9 +344,18 @@ void checkAccident()
 
   float g = getAccelerationG();
 
-  Serial.print(F("Acceleration: "));
-  Serial.print(g, 2);
-  Serial.println(F(" g"));
+  // Limit diagnostic output to once per second without slowing
+  // down the accident-detection check itself.
+  static unsigned long lastAccelerationPrint = 0;
+
+  if (millis() - lastAccelerationPrint >= 1000)
+  {
+    lastAccelerationPrint = millis();
+
+    Serial.print(F("Acceleration: "));
+    Serial.print(g, 2);
+    Serial.println(F(" g"));
+  }
 
   if (g >= IMPACT_THRESHOLD_G)
   {
