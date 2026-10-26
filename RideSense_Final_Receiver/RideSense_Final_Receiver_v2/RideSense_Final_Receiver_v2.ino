@@ -221,6 +221,25 @@ void buzzerOff()
   digitalWrite(BUZZER_PIN, LOW);
 }
 
+
+// ============================================================
+// PHASE 1 TELEMETRY TO ESP-12E
+// Format: STATUS,helmet,alcohol,sleep,accident
+// Values are sent as 0/1; ESP renders them as YES/NO.
+// ============================================================
+
+void sendTelemetryToESP()
+{
+  espSerial.print(F("STATUS,"));
+  espSerial.print(helmetStatus ? 1 : 0);
+  espSerial.print(',');
+  espSerial.print(alcoholLevel > 0 ? 1 : 0);
+  espSerial.print(',');
+  espSerial.print(sleepStatus ? 1 : 0);
+  espSerial.print(',');
+  espSerial.println(accidentDetected ? 1 : 0);
+}
+
 // ============================================================
 // MPU-6050
 // ============================================================
@@ -332,6 +351,9 @@ void checkAccident()
   if (g >= IMPACT_THRESHOLD_G)
   {
     accidentDetected = true;
+
+    // Immediately report the accident state to the ESP-12E.
+    sendTelemetryToESP();
 
     // Immediately disable engine
     setRelay(false);
@@ -980,14 +1002,8 @@ void receiveRF()
   lastRFTime =
     millis();
 
-  // Forward valid RF packet to ESP-12E as CSV:
-  // RF,helmetStatus,alcoholLevel,sleepStatus
-  espSerial.print(F("RF,"));
-  espSerial.print(helmetStatus);
-  espSerial.print(',');
-  espSerial.print(alcoholLevel);
-  espSerial.print(',');
-  espSerial.println(sleepStatus);
+  // Send all four requested states to the ESP Serial Monitor.
+  sendTelemetryToESP();
 
   // ----------------------------------------------------------
   // Serial output
