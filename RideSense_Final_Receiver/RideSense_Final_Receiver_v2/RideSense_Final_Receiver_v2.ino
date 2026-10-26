@@ -1548,8 +1548,9 @@ void loop()
     // Engine OFF
     setRelay(false);
 
-    // Alert
-    buzzerOn();
+    // RF loss still disables the engine, but does not sound the
+    // alert buzzer. The buzzer is reserved for alcohol, sleep, or accident.
+    buzzerOff();
 
     lcd.clear();
 
