@@ -62,9 +62,11 @@ bool readDetected(uint8_t pin, bool activeLow)
 
 void setup()
 {
-  pinMode(IR_HELMET_PIN, INPUT);
-  pinMode(IR_SLEEP_PIN, INPUT);
-  pinMode(MQ3_DO_PIN, INPUT);
+  // These inputs are configured for active-LOW detection. Pull-ups keep
+  // an idle/disconnected input from floating LOW and causing false alerts.
+  pinMode(IR_HELMET_PIN, INPUT_PULLUP);
+  pinMode(IR_SLEEP_PIN, INPUT_PULLUP);
+  pinMode(MQ3_DO_PIN, INPUT_PULLUP);
   pinMode(STATUS_LED_PIN, OUTPUT);
 
   digitalWrite(STATUS_LED_PIN, LOW);
@@ -107,8 +109,10 @@ void loop()
     '\0'
   };
 
-  // LED indicates the transmitter is operating and sending packets.
-  digitalWrite(STATUS_LED_PIN, HIGH);
+  // LED is an ALERT indicator only: alcohol or sleep detection.
+  // Accident detection happens on the receiver's MPU-6050.
+  digitalWrite(STATUS_LED_PIN,
+               (alcoholDetected || sleepDetected) ? HIGH : LOW);
 
   if (millis() - lastTransmitMs >= TRANSMIT_INTERVAL_MS)
   {
@@ -124,6 +128,5 @@ void loop()
     Serial.println(packet);
   }
 
-  digitalWrite(STATUS_LED_PIN, LOW);
   delay(5);
 }
